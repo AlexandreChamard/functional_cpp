@@ -1,25 +1,33 @@
 
 #include "monad.hpp"
 
-#define f(bla) std::function(bla)
-
 maybe<int> mult10(int i){return {i*10};}
 
 int main()
 {
-    // {
-    //     maybe<int> mi = retMonad<maybe>(42);
+    { /* try to bind Just 42 */
+        maybe<int> mi = retMonad<maybe>(42);
 
-    //     std::cout << mi << std::endl;
-    //     std::cout << (mi >>= retMonad<maybe>) << std::endl;
-    // }
-    // {
-    //     maybe<int> mi;
+        std::cout << mi << std::endl;
+        std::cout << (mi >>= retMonad<maybe>) << std::endl;
+    }
+    { /* try to bind Nothing */
+        maybe<int> mi;
 
-    //     std::cout << mi << std::endl;
-    //     std::cout << (mi >>= retMonad<maybe>) << std::endl;
-    // }
-    {
+        std::cout << mi << std::endl;
+        std::cout << (mi >>= retMonad<maybe>) << std::endl;
+    }
+    { /* compute 42 with monadic form */
+        auto res =
+            maybe<int>(4) >>= monadBind(int x,
+            mult10(x) >>= monadBind(int y,
+            maybe<int>(2) >>= monadBind(int z,
+            retMonad<maybe>(y + z);
+            );););
+
+        std::cout << res << std::endl;
+    }
+    { /* heavier way to to compute 42 with monadic form */
         auto res = [] {
             if (maybe<int> a = 4) {
                 return [&](int x){
@@ -38,16 +46,6 @@ int main()
                 return failMonad<maybe>();
             }
         }();
-        std::cout << res << std::endl;
-    }
-    {
-        auto res =
-            maybe<int>(4) >>= f([&](int x){return
-            mult10(x) >>= f([&](int y) {return
-            maybe<int>(2) >>= f([&](int z){return
-            retMonad<maybe>(y + z);
-            });});});
-
         std::cout << res << std::endl;
     }
 }

@@ -3,16 +3,7 @@
 #include <iostream>
 #include <functional>
 
-// struct monad {
-//     template<class T>
-//     void ret();
-
-//     template<class T, class U, class Tt>
-//     U bind(T const &t, U (*)(Tt const &)) {
-//         if (t.fail())
-//     }
-
-// };
+#define monadBind(arg, core) std::function([&](arg){return core})
 
 template<template<typename> typename Monad, typename T = int>
 Monad<T> retMonad(T t)
@@ -35,6 +26,15 @@ Monad<U> operator>>=(Monad<T> t, std::function<Monad<U>(T)> f)
     return failMonad<Monad>();
 }
 
+template<typename U, typename T, template<typename> typename Monad>
+Monad<U> operator>>=(Monad<T> t, Monad<U> (*f)(T))
+{
+    if (t) {
+        return f(t.get());
+    }
+    return failMonad<Monad>();
+}
+
 template<class T>
 class maybe {
     bool    state;
@@ -50,13 +50,6 @@ public:
     T const &get(void) const {return t;};
     T &get(void) {return t;};
 
-    template<class U>
-    maybe<U> bind(maybe<U> (*f)(T const &)) {
-        if (t) {
-            return f(t);
-        }
-        return {};
-    }
 };
 
 template<class T>
