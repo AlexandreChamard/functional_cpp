@@ -1,32 +1,36 @@
 
+#pragma once
+
 #include <utility>
 #include <iostream>
 #include <functional>
 
-#pragma once
+namespace fun {
 
 #define monadBind(arg, core) std::function([&](arg){return core})
 
-template<template<typename> typename Monad, typename T = int>
-Monad<T> retMonad(T t)
+template<template<class> class Monad, class ...Ts>
+Monad<Ts...> retMonad(Ts ...ts)
 {
-    return Monad<T>::retMonad(std::forward<T>(t));
+    return Monad<Ts...>::retMonad(std::forward<Ts>(ts)...);
 }
 
-template<template<typename> typename Monad, typename T = int>
-Monad<T> failMonad(std::string const &msg = "")
-{
-    return Monad<T>::failMonad(msg);
-}
+// template<template<class> class Monad, class ...Ts>
+// Monad<Ts...> failMonad(std::string const &msg = "")
+// {
+//     return Monad<Ts...>::failMonad(msg);
+// }
 
-template<typename U, typename T, template<typename> typename Monad>
-Monad<U> operator>>=(Monad<T> const &t, std::function<Monad<U>(T)> f)
+template<class U, class Monad, class T>
+U operator>>=(Monad const &t, std::function<U (T)> f)
 {
     t.operator>>=(f);
 }
 
-template<typename U, typename T, template<typename> typename Monad>
-Monad<U> operator>>=(Monad<T> const &t, Monad<U> (*f)(T))
+template<class U, class Monad, class T>
+U operator>>=(Monad const &t, U (*f)(T))
 {
     t.operator>>=(f);
+}
+
 }

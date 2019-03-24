@@ -2,7 +2,7 @@
 #include "monad.hpp"
 #include "../Maybe/maybe.hpp"
 
-using fun::maybe;
+using namespace fun;
 
 maybe<int> mult10(int i){return {i*10};}
 
