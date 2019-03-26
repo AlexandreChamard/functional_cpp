@@ -18,5 +18,4 @@ int main()
     if (either<std::string, int> e3 = {Left{}, "I don't know"}) {
         std::cout << "what is the solution ? " << e3.get() << std::endl;
     }
-
 }

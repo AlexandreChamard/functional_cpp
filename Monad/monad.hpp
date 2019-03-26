@@ -22,13 +22,13 @@ Monad<Ts...> retMonad(Ts ...ts)
 // }
 
 template<class U, class Monad, class T>
-U operator>>=(Monad const &t, std::function<U (T)> f)
+U operator>>=(Monad const &t, std::function<U (T const &)> const &f)
 {
     t.operator>>=(f);
 }
 
 template<class U, class Monad, class T>
-U operator>>=(Monad const &t, U (*f)(T))
+U operator>>=(Monad const &t, U (*f)(T const &))
 {
     t.operator>>=(f);
 }

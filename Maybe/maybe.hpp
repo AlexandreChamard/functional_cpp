@@ -8,7 +8,7 @@
 
 namespace fun {
 
-struct nothing {};
+enum nothing_e {Nothing};
 
 template<class T>
 class maybe {
@@ -16,42 +16,49 @@ class maybe {
     storage<T> t;
 
 public:
-    maybe(void): state{false} {}
-    maybe(nothing): state{false} {}
-    maybe(T const &_t): state{true} { new (t.ptr_ref()) T{_t}; }
-    maybe(T &&_t): state{true} { new (t.ptr_ref()) T{std::forward<T>(_t)}; }
+    maybe(nothing_e): state{false} {}
+    maybe(T const &_t): state{true} {
+        new (t.ptr_ref()) T{_t};
+    }
+    maybe(T &&_t): state{true} {
+        new (t.ptr_ref()) T{std::forward<T>(_t)};
+    }
+    template<class ...Ts>
+    maybe(Ts &&...ts): state{true} {
+        new (t.ptr_ref()) T{std::forward<Ts>(ts)...};
+    }
 
-    ~maybe() { if (state) t.ptr_ref()->~T(); }
+    ~maybe() {
+        if (state == true) 
+            t.ptr_ref()->~T();
+    }
 
     maybe(maybe const &) = delete;
     maybe &operator=(maybe const &) = delete;
+    maybe(maybe &&) = delete;
+    maybe &operator=(maybe &&) = delete;
 
     operator bool() const { return state; }
 
-    T const &operator*() const { return t.get(); }
-    T &operator*() { return t.get(); }
-    T &get() { assert(state == true); return t.ref(); }
-    T const &get() const { assert(state == true); return t.ref(); }
-
     friend std::ostream &operator<<(std::ostream &os, maybe const &m) {
         if (m)
-            return os << m.get();
+            return os << m.t.ref();
         return os << "Nothing";
     }
 
     //// monad specialization ////
 
     template<typename U>
-    maybe<U> operator>>=(std::function<maybe<U>(T)> f) {
+    maybe<U> operator>>=(std::function<maybe<U>(T const &)> f) const {
         if (*this) {
-            return f(get());
+            return f(t.ref());
         }
         return maybe<U>::failMonad();
     }
     template<typename U>
-    maybe<U> operator>>=(maybe<U>(*f)(T)) {
+    maybe<U> operator>>=(maybe<U>(*f)(T const &)) const {
         if (*this) {
-            return f(get());
+            return f(t.ref());
         }
         return maybe<U>::failMonad();
     }
@@ -61,7 +68,7 @@ public:
     }
 
     static maybe<T> failMonad(std::string const & = "") {
-        return {};
+        return Nothing;
     }
 };
 
