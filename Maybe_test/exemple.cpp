@@ -3,12 +3,27 @@
 
 using namespace fun;
 
-static maybe<int> mult10(int const &i)
+struct I {
+    int _i;
+
+    operator int() const {return _i;}
+
+    ~I() {std::cerr << "i detor" << std::endl;}
+    I(): _i{} {std::cerr << "i ctor void" << std::endl;}
+    I(int i): _i{i} {std::cerr << "i ctor int" << std::endl;}
+    I(I const &i): _i{i._i} {std::cerr << "i ctor const&" << std::endl;}
+    I(I &&i): _i{i._i} {std::cerr << "i ctor &&" << std::endl;}
+    I&operator=(I const&i) {*this = i;std::cerr << "i = const &" << std::endl;}
+    I&operator=(I&&i) {*this = i;std::cerr << "i = &&" << std::endl;}
+};
+std::ostream &operator<<(std::ostream &os, I const &i) { return os << i._i; }
+
+static maybe<I> mult10(I const &i)
 {
     return i * 10;
 }
 
-maybe<int> retEvenOnly(int const &i)
+maybe<I> retEvenOnly(int const &i)
 {
     if (i % 2 == 0)
         return i;
@@ -30,9 +45,9 @@ int main()
     std::cout << retEvenOnly(13) << std::endl;
 
     auto res =
-            maybe<int>(4) >>= monadBind(int const &x,
-            mult10(x) >>= monadBind(int const &y,
-            maybe<int>(2) >>= monadBind(int const &z,
+            maybe<I>(4) >>= monadBind(I const &x,
+            mult10(x) >>= monadBind(I const &y,
+            maybe<I>(2) >>= monadBind(I const &z,
             retMonad<maybe>(y + z);
             );););
 
@@ -48,7 +63,7 @@ int main()
         });
         std::cout << "first try with string : ";
         mi >>= f;
-        std::cout << "second try with Nothing : ";
+        std::cout << "first try with Nothing : ";
         mii >>= f;
         std::cout << std::endl;
     }
