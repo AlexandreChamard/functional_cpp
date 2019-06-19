@@ -61,7 +61,7 @@ public:
     //// monad specialization ////
 
     template<typename U>
-    maybe<U> operator>>=(std::function<maybe<U>(T const &)> f) const {
+    maybe<U> operator>>=(std::function<maybe<U>(T const &)> const &f) const {
         if (*this) {
             return f(t.ref());
         }
