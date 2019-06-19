@@ -7,13 +7,13 @@
 
 namespace fun {
 
-struct Right {};
-
-struct Left {};
+enum ctor_either_right_e {Right};
+enum ctor_either_left_e {Left};
 
 template<class L, class R>
 class either {
 
+    bool empty = false;
     bool state;
     union {
         storage<L> l;
@@ -21,56 +21,83 @@ class either {
     };
 
 public:
-    either(Left, L const &_l): state{false} { new (l.ptr_ref()) L{_l}; }
-    either(Left, L &&_l): state{false} { new (l.ptr_ref()) L{std::forward<L>(_l)}; }
-    either(Right, R const &_r): state{true} { new (r.ptr_ref()) R{_r}; }
-    either(Right, R &&_r): state{true} { new (r.ptr_ref()) R{std::forward<R>(_r)}; }
+    either(ctor_either_left_e, L const &_l): state{false} { new (l.ptr_ref()) L{_l}; }
+    either(ctor_either_right_e, R const &_r): state{true} { new (r.ptr_ref()) R{_r}; }
+    template<class ...Ts>
+    either(ctor_either_left_e, Ts &&...ts): state{false} { new (l.ptr_ref()) L{std::forward<Ts>(ts)...}; }
+    template<class ...Ts>
+    either(ctor_either_right_e, Ts &&...ts): state{true} { new (r.ptr_ref()) R{std::forward<Ts>(ts)...}; }
     ~either() {
-        if (state)
-            r.ptr_ref()->~R();
-        else
-            l.ptr_ref()->~L();
+        if (empty == false) {
+            if (state)
+                r.ptr_ref()->~R();
+            else
+                l.ptr_ref()->~L();
+        }
     }
 
-    either(void) = delete;
+    either(either &&e): empty{e.empty}, state{e.state} {
+        assert(empty == false); // need to throw
+        e.empty = true;
+        if (state) {
+            r.ref() = std::move(e.r.ref());
+        } else {
+            l.ref() = std::move(e.l.ref());
+        }
+    }
+
     either(either const &) = delete;
     either &operator=(either const &) = delete;
 
     operator bool() const {return state;}
 
-    R &get() { assert(state == true); return r.ref(); }
-    R const &get() const { assert(state == true); return r.ref(); }
+    R &get() { assert(state == true); return r.ref(); } // deprecated
+    R const &get() const { assert(state == true); return r.ref(); } // deprecated
 
     friend std::ostream &operator<<(std::ostream &os, either const &e) {
-        if (e)
-            return std::cout << "Right " << e.r.ref();
-        return std::cout << "Left " << e.l.ref();
+        if (e.empty == false) {
+            if (e)
+                return os << "Right " << e.r.ref();
+            return os << "Left " << e.l.ref();
+        } else {
+            // need to throw
+            return os << "<error : operator<< on empty either>" << std::endl;
+        }
     }
 
     //// monad specialization ////
 
-    // template<class L, class R>
-    // either<L, R> operator>>=(std::function<either<L, R>(Right)> f) {
-    //     if (*this) {
-    //         return f(get());
-    //     }
-    //     return maybe<U>::failMonad();
-    // }
-    // template<typename U>
-    // maybe<U> operator>>=(maybe<U>(*f)(T)) {
-    //     if (*this) {
-    //         return f(get());
-    //     }
-    //     return maybe<U>::failMonad();
-    // }
+    template<class LL, class RR>
+    either<LL, RR> operator>>=(std::function<either<LL, RR>(R const &)> const &f) const {
+        if (*this) {
+            return f(get());
+        }
+        return either<LL, RR>::failMonad();
+    }
 
-    // static maybe<T> retMonad(T t) {
-    //     return {t};
-    // }
+    template<class LL, class RR>
+    either<LL, RR> operator>>=(either<LL, RR>(*f)(R const &)) const {
+        if (*this) {
+            return f(get());
+        }
+        return either<LL, RR>::failMonad();
+    }
 
-    // static maybe<T> failMonad(std::string const & = "") {
-    //     return {};
-    // }
+    static either<L, R> retMonad(R const &r) {
+        return {Right, r};
+    }
+    template<class ...Ts>
+    static either<L, R> retMonad(Ts &&...ts) {
+        return {Right, std::forward<Ts>(ts)...};
+    }
+
+    static either<L, R> failMonad(L const &l = L{}) {
+        return {Left, l};
+    }
+    template<class ...Ts>
+    static either<L, R> failMonad(Ts &&...ts) {
+        return {Left, std::forward<Ts>(ts)...};
+    }
 
 };
 

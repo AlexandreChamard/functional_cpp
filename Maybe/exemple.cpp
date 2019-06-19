@@ -32,7 +32,7 @@ int main()
     auto res =
             maybe<int>(4) >>= monadBind(int const &x,
             mult10(x) >>= monadBind(int const &y,
-            maybe<int>(2) >>= monadBind(int const &z,
+            maybe<int>(0.3) >>= monadBind(int const &z,
             retMonad<maybe>(y + z);
             );););
 
